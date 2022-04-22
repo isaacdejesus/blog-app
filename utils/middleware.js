@@ -1,4 +1,6 @@
 const logger = require('./logger.js')
+const jwt = require('jsonwebtoken')
+const User = require('../models/user')
  //middleware called in order declared
 //defines a middleware function
 const requestLogger = (request, response, next) => {
@@ -20,11 +22,44 @@ const errorHandler = (error, request, response, next) => {
     else if(error.name === 'ValidationError'){
         return response.status(400).json({error: error.message})
     }
+    else if(error.name === 'JsonWebTokenError'){
+        return response.status(401).json({
+            error: "invalid token"
+        })
+    }
+    else if(error.name === 'TokenExpiredError'){
+        return response.status(401).json({
+            error: 'token expired'
+        })
+    }
     next(error)
 }
    
+const tokenExtractor = (request, response, next) => {
+  const authorization = request.get('authorization')
+  if(authorization && authorization.toLowerCase().startsWith('bearer ')){
+    //return authorization.substring(7)
+    request.token = authorization.substring(7)
+  }
+  //return null
+  next()
+}
+
+const userExtractor = async(request, response, next) => {
+  const authorization = request.get('authorization')
+  if(authorization && authorization.toLowerCase().startsWith('bearer ')){
+    //request.token = authorization.substring(7)
+    const decodedToken = jwt.verify(authorization.substring(7), process.env.SECRET)
+    const user = await User.findById(decodedToken.id)
+    request.user = user
+  }
+  //return null
+  next()
+}
 module.exports = {
     requestLogger,
     unknownEndpoint,
-    errorHandler
+    errorHandler, 
+    tokenExtractor,
+    userExtractor
 }
