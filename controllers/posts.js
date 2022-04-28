@@ -55,9 +55,10 @@ postsRouter.post('/', async (request, response) => {
  })
  postsRouter.put('/:id', async(request, response) => {
    const body = request.body
+    console.log(body)
    const post = {
      title: body.title,
-     author: author.name,
+     author:body.author ,
      url: body.url,
      likes: body.likes + 1
    }
